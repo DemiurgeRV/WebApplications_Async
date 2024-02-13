@@ -4,10 +4,19 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"math/rand"
 	"net/http"
+	"time"
 )
 
+func randomStatus() int {
+	time.Sleep(10 * time.Second)
+	return rand.Intn(2)
+}
+
 func SendStatus(pk string, url string) {
+	result := randomStatus()
+	fmt.Println(result)
 	data := []byte(`{"name": "John", "age": 30}`)
 
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(data))
