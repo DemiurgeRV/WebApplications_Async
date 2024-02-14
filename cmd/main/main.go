@@ -3,22 +3,20 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/disintegration/imaging"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
-	"math/rand"
 	"mime/multipart"
 	"net/http"
 	"time"
 )
 
-func smoothEffect() int {
+func timeSleep() {
 	time.Sleep(10 * time.Second)
-	return rand.Intn(2)
 }
 
 func SendImage(id string, url string) {
-	result := smoothEffect()
-	fmt.Println(result)
+	timeSleep()
 	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Println("Error getting image:", err)
@@ -33,15 +31,33 @@ func SendImage(id string, url string) {
 		return
 	}
 
+	// Декодируем изображение
+	img, err := imaging.Decode(bytes.NewReader(imgData))
+	if err != nil {
+		fmt.Println("Error decoding image:", err)
+		return
+	}
+
+	// Применяем эффект блюра к изображению
+	img = imaging.Blur(img, 3) // Эффект блюра с радиусом 3
+
+	// Кодирование обработанного изображения обратно в формат PNG
+	buf := new(bytes.Buffer)
+	err = imaging.Encode(buf, img, imaging.PNG)
+	if err != nil {
+		fmt.Println("Error encoding image:", err)
+		return
+	}
+
 	// Создаем FormData и добавляем изображение
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("image", ""+id+".png")
+	part, err := writer.CreateFormFile("image", ""+id+"_blurred.png")
 	if err != nil {
 		fmt.Println("Error creating form file:", err)
 		return
 	}
-	part.Write(imgData)
+	part.Write(buf.Bytes()) // Записываем обработанное изображение
 	writer.Close()
 
 	// Отправляем FormData на сервер Django
