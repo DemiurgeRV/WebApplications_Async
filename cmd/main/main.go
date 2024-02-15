@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+const key = "ndscL3Jwp9kMNjknk12"
+
 func timeSleep() {
 	time.Sleep(10 * time.Second)
 }
@@ -39,7 +41,7 @@ func SendImage(id string, url string) {
 	}
 
 	// Применяем эффект блюра к изображению
-	img = imaging.Blur(img, 3) // Эффект блюра с радиусом 3
+	img = imaging.Blur(img, 3)
 
 	// Кодирование обработанного изображения обратно в формат PNG
 	buf := new(bytes.Buffer)
@@ -52,11 +54,20 @@ func SendImage(id string, url string) {
 	// Создаем FormData и добавляем изображение
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
+
+	postKey, err := writer.CreateFormField("key")
+	if err != nil {
+		fmt.Println("Error creating form field:", err)
+		return
+	}
+	postKey.Write([]byte(key))
+
 	part, err := writer.CreateFormFile("image", ""+id+"_blurred.png")
 	if err != nil {
 		fmt.Println("Error creating form file:", err)
 		return
 	}
+
 	part.Write(buf.Bytes()) // Записываем обработанное изображение
 	writer.Close()
 
@@ -83,6 +94,11 @@ func SendImage(id string, url string) {
 func main() {
 	router := gin.Default()
 	router.POST("/edit_image/", func(c *gin.Context) {
+		getKey := c.PostForm("key")
+		if getKey != key {
+			fmt.Println("Error")
+			return
+		}
 		id := c.PostForm("id")
 		go SendImage(id, "http://localhost:8000/api/orders/"+id+"/image/")
 		c.JSON(http.StatusOK, gin.H{"message": "Image retrieval and update initiated"})
